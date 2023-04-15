@@ -1,5 +1,5 @@
 # coding=utf-8
-from transformers import XLMRobertaTokenizer, XLMRobertaModel, DataCollatorWithPadding
+from transformers import XLMRobertaTokenizer, XLMRobertaModel, AdamW, DataCollatorWithPadding
 import pickle
 import torch
 import pytorch_lightning as pl
@@ -12,16 +12,22 @@ TOKENIZER = XLMRobertaTokenizer.from_pretrained('xlm-roberta-base')
 
 
 class TitleModel(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, dropout = 0.0):
         super().__init__()
         self.bert = XLMRobertaModel.from_pretrained('xlm-roberta-base')
-        self.head = torch.nn.Linear(self.bert.config.hidden_size, 3)
+        self.fc = torch.nn.Linear(self.bert.config.hidden_size, self.bert.config.hidden_size)
+        self.proj = torch.nn.Linear(self.bert.config.hidden_size, 3)
+        self.dropout = torch.nn.Dropout(p=dropout)
 
     def forward(self, input_ids):
         attention_mask = input_ids != self.pad_token_id
 
         x = self.bert(input_ids, attention_mask=attention_mask)[0][:, 0, :]
-        x = self.head(x)
+        x = self.dropout(x)
+        x = self.fc(x)
+        x = torch.tanh(x)
+        x = self.dropout(x)
+        x = self.proj(x)
 
         return x
 
@@ -54,11 +60,11 @@ class TitleDataset(torch.utils.data.Dataset):
 
 
 class LitModel(pl.LightningModule):
-    def __init__(self, lr, freeze_embeddings, wd, epochs):
+    def __init__(self, lr, freeze_embeddings, wd, epochs, dropout):
         super().__init__()
         self.save_hyperparameters()
 
-        self.model = TitleModel()
+        self.model = TitleModel(dropout=dropout)
         if self.hparams.freeze_embeddings:
             for parameter in self.model.bert.embeddings.parameters():
                 parameter.requires_grad = False
@@ -144,12 +150,14 @@ class LitDataModule(pl.LightningDataModule):
             self.train_dataset, self.val_dataset = (TitleDataset(
                 data=data,
                 tokenizer=self.tokenizer,
-                max_len=self.hparams.max_len
+                max_len=self.hparams.max_len,
+                zone=self.hparams.zone
             ) for data in (train, test))
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
             self.train_dataset, collate_fn=DataCollatorWithPadding(tokenizer=self.tokenizer),
+            num_workers=8,
             batch_size=self.hparams.train_bs,
             shuffle=True
         )
@@ -157,19 +165,26 @@ class LitDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
             self.val_dataset, collate_fn=DataCollatorWithPadding(tokenizer=self.tokenizer),
+            num_workers=8,
             batch_size=self.hparams.test_bs,
             shuffle=False
         )
 
 
 def main(args):
-    model = LitModel(args.lr, args.freeze_embeddings, wd=args.wd, epochs=args.epochs)
+    model = LitModel(
+        args.lr, args.freeze_embeddings,
+        wd=args.wd,
+        epochs=args.epochs,
+        dropout=args.dropout
+    )
     data_module = LitDataModule(args.train_dataset, args.test_dataset,
-                                args.train_bs, args.test_bs, args.max_len)
+                                args.train_bs, args.test_bs, args.max_len, args.zone)
     wandb_logger = WandbLogger(project="scp_classes")
     trainer = pl.Trainer(
         logger=wandb_logger,
         gpus=args.gpus,
+        strategy='ddp',
         max_epochs=args.epochs,
         num_sanity_val_steps=0
     )
@@ -178,7 +193,7 @@ def main(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--zone', type=str, default='titles')
+    parser.add_argument('--zone', type=str, default='title')
     parser.add_argument('--lr', type=float, default=1e-5)
     parser.add_argument('--train_dataset', type=str, default='data/titles/train.pkl')
     parser.add_argument('--test_dataset', type=str, default='data/titles/test.pkl')
@@ -189,6 +204,7 @@ def get_args():
     parser.add_argument('--freeze_embeddings', action='store_true', dest='freeze_embeddings')
     parser.add_argument('--wd', type=float, default=0)
     parser.add_argument('--gpus', type=int, default=0)
+    parser.add_argument('--dropout', type=float, default=0.0)
 
     return parser.parse_args()
 
