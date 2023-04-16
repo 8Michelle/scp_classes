@@ -12,15 +12,19 @@ TOKENIZER = XLMRobertaTokenizer.from_pretrained('xlm-roberta-base')
 
 
 class TitleModel(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, dropout = 0.0):
         super().__init__()
         self.bert = XLMRobertaModel.from_pretrained('xlm-roberta-base')
         self.head = torch.nn.Linear(self.bert.config.hidden_size, 3)
+        self.dropout = torch.nn.Dropout(p=dropout)
+        self.relu = torch.nn.ReLU()
 
     def forward(self, input_ids):
         attention_mask = input_ids != self.pad_token_id
 
-        x = self.bert(input_ids, attention_mask=attention_mask)[0][:, 0, :]
+        x = self.bert(input_ids, attention_mask=attention_mask)[0][:, 0, :] 
+        x = self.dropout(x)
+        x = self.relu(x)
         x = self.head(x)
 
         return x
@@ -54,11 +58,11 @@ class TitleDataset(torch.utils.data.Dataset):
 
 
 class LitModel(pl.LightningModule):
-    def __init__(self, lr, freeze_embeddings, wd, epochs):
+    def __init__(self, lr, freeze_embeddings, wd, epochs, dropout):
         super().__init__()
         self.save_hyperparameters()
 
-        self.model = TitleModel()
+        self.model = TitleModel(dropout=dropout)
         if self.hparams.freeze_embeddings:
             for parameter in self.model.bert.embeddings.parameters():
                 parameter.requires_grad = False
@@ -144,7 +148,7 @@ class LitDataModule(pl.LightningDataModule):
             self.train_dataset, self.val_dataset = (TitleDataset(
                 data=data,
                 tokenizer=self.tokenizer,
-                max_len=self.hparams.max_len
+                max_len=self.hparams.max_len, zone=self.hparams.zone
             ) for data in (train, test))
 
     def train_dataloader(self):
@@ -163,9 +167,9 @@ class LitDataModule(pl.LightningDataModule):
 
 
 def main(args):
-    model = LitModel(args.lr, args.freeze_embeddings, wd=args.wd, epochs=args.epochs)
+    model = LitModel(args.lr, args.freeze_embeddings, wd=args.wd, epochs=args.epochs, dropout=args.dropout)
     data_module = LitDataModule(args.train_dataset, args.test_dataset,
-                                args.train_bs, args.test_bs, args.max_len)
+                                args.train_bs, args.test_bs, args.max_len, zone=args.zone)
     wandb_logger = WandbLogger(project="scp_classes")
     trainer = pl.Trainer(
         logger=wandb_logger,
@@ -189,6 +193,7 @@ def get_args():
     parser.add_argument('--freeze_embeddings', action='store_true', dest='freeze_embeddings')
     parser.add_argument('--wd', type=float, default=0)
     parser.add_argument('--gpus', type=int, default=0)
+    parser.add_argument('--dropout', type=float, default=0.0)
 
     return parser.parse_args()
 
