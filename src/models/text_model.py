@@ -16,6 +16,7 @@ class TitleModel(torch.nn.Module):
         super().__init__()
         self.bert = XLMRobertaModel.from_pretrained('xlm-roberta-base')
         self.head = torch.nn.Linear(self.bert.config.hidden_size, 3)
+        self.activation = torch.nn.ReLU()
 
     def forward(self, input_ids):
         attention_mask = input_ids != self.pad_token_id
