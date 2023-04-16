@@ -18,6 +18,8 @@ class TitleModel(torch.nn.Module):
         self.fc = torch.nn.Linear(self.bert.config.hidden_size, self.bert.config.hidden_size)
         self.proj = torch.nn.Linear(self.bert.config.hidden_size, 3)
         self.dropout = torch.nn.Dropout(p=dropout)
+        self.head = torch.nn.Linear(self.bert.config.hidden_size, 3)
+        self.activation = torch.nn.ReLU()
 
     def forward(self, input_ids):
         attention_mask = input_ids != self.pad_token_id
