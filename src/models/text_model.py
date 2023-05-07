@@ -24,8 +24,12 @@ class TitleModel(torch.nn.Module):
         attention_mask = input_ids != self.pad_token_id
 
         x = self.bert(input_ids, attention_mask=attention_mask)[0][:, 0, :] 
+
         x = self.dropout(x)
+        x = self.fc(x)
+
         x = self.relu(x)
+        x = self.dropout(x)
         x = self.head(x)
 
         return x
