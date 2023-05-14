@@ -18,4 +18,4 @@ There are some experiments with different document zones: titles, descriptions a
 | Containment procedures  | 0.59  |
 | Description  | 0.60  |
 
-Then I find that learning rate increasing (1e-5 -> 5e-5) leads to larger accuracy: 0.61 (6th epoch)
+Then I find that learning rate increasing (1e-5 -> 5e-5) leads to larger accuracy: 0.62 (6th epoch)
