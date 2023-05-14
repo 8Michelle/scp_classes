@@ -8,6 +8,7 @@ from pytorch_lightning.loggers import WandbLogger
 from sklearn.metrics import accuracy_score
 
 
+torch.manual_seed(42)
 TOKENIZER = XLMRobertaTokenizer.from_pretrained('xlm-roberta-base')
 
 
@@ -15,21 +16,17 @@ class TitleModel(torch.nn.Module):
     def __init__(self, dropout = 0.0):
         super().__init__()
         self.bert = XLMRobertaModel.from_pretrained('xlm-roberta-base')
-        self.fc = torch.nn.Linear(self.bert.config.hidden_size, self.bert.config.hidden_size)
-        self.proj = torch.nn.Linear(self.bert.config.hidden_size, 3)
-        self.dropout = torch.nn.Dropout(p=dropout)
         self.head = torch.nn.Linear(self.bert.config.hidden_size, 3)
-        self.activation = torch.nn.ReLU()
+        self.dropout = torch.nn.Dropout(p=dropout)
+        self.relu = torch.nn.ReLU()
 
     def forward(self, input_ids):
         attention_mask = input_ids != self.pad_token_id
 
-        x = self.bert(input_ids, attention_mask=attention_mask)[0][:, 0, :]
+        x = self.bert(input_ids, attention_mask=attention_mask)[0][:, 0, :] 
         x = self.dropout(x)
-        x = self.fc(x)
-        x = torch.tanh(x)
-        x = self.dropout(x)
-        x = self.proj(x)
+        x = self.relu(x)
+        x = self.head(x)
 
         return x
 
@@ -174,15 +171,11 @@ class LitDataModule(pl.LightningDataModule):
 
 
 def main(args):
-    model = LitModel(
-        args.lr, args.freeze_embeddings,
-        wd=args.wd,
-        epochs=args.epochs,
-        dropout=args.dropout
-    )
+    model = LitModel(args.lr, args.freeze_embeddings, wd=args.wd, epochs=args.epochs, dropout=args.dropout)
     data_module = LitDataModule(args.train_dataset, args.test_dataset,
-                                args.train_bs, args.test_bs, args.max_len, args.zone)
-    wandb_logger = WandbLogger(project="scp_classes")
+                                args.train_bs, args.test_bs, args.max_len, zone=args.zone)
+    wandb_logger = WandbLogger(project="scp_classes", log_model='all')
+
     trainer = pl.Trainer(
         logger=wandb_logger,
         gpus=args.gpus,
