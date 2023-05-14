@@ -16,7 +16,8 @@ class TitleModel(torch.nn.Module):
     def __init__(self, dropout = 0.0):
         super().__init__()
         self.bert = XLMRobertaModel.from_pretrained('xlm-roberta-base')
-        self.head = torch.nn.Linear(self.bert.config.hidden_size, 3)
+        self.fc = torch.nn.Linear(self.bert.config.hidden_size, 128)
+        self.head = torch.nn.Linear(128, 3)
         self.dropout = torch.nn.Dropout(p=dropout)
         self.relu = torch.nn.ReLU()
 
@@ -24,6 +25,11 @@ class TitleModel(torch.nn.Module):
         attention_mask = input_ids != self.pad_token_id
 
         x = self.bert(input_ids, attention_mask=attention_mask)[0][:, 0, :] 
+        
+        x = self.dropout(x)
+        x = self.relu(x)
+        x = self.fc(x)
+
         x = self.dropout(x)
         x = self.relu(x)
         x = self.head(x)
