@@ -8,6 +8,7 @@ from pytorch_lightning.loggers import WandbLogger
 from sklearn.metrics import accuracy_score
 
 
+torch.manual_seed(42)
 TOKENIZER = XLMRobertaTokenizer.from_pretrained('xlm-roberta-base')
 
 
@@ -170,7 +171,7 @@ def main(args):
     model = LitModel(args.lr, args.freeze_embeddings, wd=args.wd, epochs=args.epochs, dropout=args.dropout)
     data_module = LitDataModule(args.train_dataset, args.test_dataset,
                                 args.train_bs, args.test_bs, args.max_len, zone=args.zone)
-    wandb_logger = WandbLogger(project="scp_classes")
+    wandb_logger = WandbLogger(project="scp_classes", log_model=True)
     trainer = pl.Trainer(
         logger=wandb_logger,
         gpus=args.gpus,
