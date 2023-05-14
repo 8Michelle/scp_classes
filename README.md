@@ -6,5 +6,8 @@ I created a simple BERT model for object classification in SCP setting. This rep
 The training data was collected from scp-wiki.wikidot.com, but I don't remember what code I used for scraping because it was long time ago.
 The dataset includes titles, descriptions and containment procedures for 4207 objects with class labels (2948 in train and 1259 in test).
 ## Model
-I used pre-trained XLMRoberta model and fine-tuned it to the SCP objects data for a three-class classification task. There are one fully-connected layer in a classification head.
+I used pre-trained XLMRoberta model and fine-tuned it to the SCP objects data for a three-class classification task. There is one fully-connected layer in a classification head.
 ## Experiments
+There are some experiments with different document zones: titles, descriptions and containment procedures.
+
+## Results
