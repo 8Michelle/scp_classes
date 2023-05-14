@@ -10,4 +10,10 @@ I used pre-trained XLMRoberta model and fine-tuned it to the SCP objects data fo
 ## Experiments
 There are some experiments with different document zones: titles, descriptions and containment procedures.
 ![test](https://github.com/8Michelle/scp_classes/blob/master/assets/wandb_plots.png)
+| Zone | Accuracy |
+| ---- | -------- |
+| Title | 0.46  |
+| Containment procedures  | 0.59  |
+| Description  | 0.60  |
+Then I find that learning rate increasing (1e-5 -> 5e-5) leads to larger accuracy: 0.61 (6th epoch)
 ## Results
