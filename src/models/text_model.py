@@ -171,7 +171,8 @@ def main(args):
     model = LitModel(args.lr, args.freeze_embeddings, wd=args.wd, epochs=args.epochs, dropout=args.dropout)
     data_module = LitDataModule(args.train_dataset, args.test_dataset,
                                 args.train_bs, args.test_bs, args.max_len, zone=args.zone)
-    wandb_logger = WandbLogger(project="scp_classes", log_model=True)
+    wandb_logger = WandbLogger(project="scp_classes", log_model='all')
+
     trainer = pl.Trainer(
         logger=wandb_logger,
         gpus=args.gpus,
