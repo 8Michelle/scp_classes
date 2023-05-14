@@ -9,5 +9,5 @@ The dataset includes titles, descriptions and containment procedures for 4207 ob
 I used pre-trained XLMRoberta model and fine-tuned it to the SCP objects data for a three-class classification task. There is one fully-connected layer in a classification head.
 ## Experiments
 There are some experiments with different document zones: titles, descriptions and containment procedures.
-<img src="https://github.com/8Michelle/scp_classes/blob/master/assets/wandb_plots.png" width="100">
+![test](https://github.com/8Michelle/scp_classes/blob/master/assets/wandb_plots.png)
 ## Results
