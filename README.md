@@ -1,5 +1,5 @@
 # scp_classes
-This is an NLP model that helps [SCPhttps://scp-wiki.wikidot.com/] scientist with objects classification.
+This is an NLP model that helps [SCP](https://scp-wiki.wikidot.com/) scientist with objects classification.
 ## Overview
 I created a simple BERT model for object classification in SCP setting. This repository includes a code for model fine-tune and usage. I also attached some training report.
 ## Training data
