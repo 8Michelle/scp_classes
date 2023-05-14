@@ -9,7 +9,7 @@ import pandas as pd
 
 SOURCE_DIR = 'data/raw'
 OUTPUT_DIR = 'data'
-COLUMNS = ['title', 'containment_procedures']
+COLUMNS = ['title', 'containment_procedures', 'description']
 
 
 def main():

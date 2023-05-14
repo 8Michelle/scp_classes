@@ -1,5 +1,5 @@
 # coding=utf-8
-from transformers import XLMRobertaTokenizer, XLMRobertaModel, DataCollatorWithPadding
+from transformers import XLMRobertaTokenizer, XLMRobertaModel, AdamW, DataCollatorWithPadding
 import pickle
 import torch
 import pytorch_lightning as pl
@@ -149,12 +149,14 @@ class LitDataModule(pl.LightningDataModule):
             self.train_dataset, self.val_dataset = (TitleDataset(
                 data=data,
                 tokenizer=self.tokenizer,
-                max_len=self.hparams.max_len, zone=self.hparams.zone
+                max_len=self.hparams.max_len,
+                zone=self.hparams.zone
             ) for data in (train, test))
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
             self.train_dataset, collate_fn=DataCollatorWithPadding(tokenizer=self.tokenizer),
+            num_workers=8,
             batch_size=self.hparams.train_bs,
             shuffle=True
         )
@@ -162,6 +164,7 @@ class LitDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
             self.val_dataset, collate_fn=DataCollatorWithPadding(tokenizer=self.tokenizer),
+            num_workers=8,
             batch_size=self.hparams.test_bs,
             shuffle=False
         )
@@ -176,6 +179,7 @@ def main(args):
     trainer = pl.Trainer(
         logger=wandb_logger,
         gpus=args.gpus,
+        strategy='ddp',
         max_epochs=args.epochs,
         num_sanity_val_steps=0
     )
@@ -184,7 +188,7 @@ def main(args):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--zone', type=str, default='titles')
+    parser.add_argument('--zone', type=str, default='title')
     parser.add_argument('--lr', type=float, default=1e-5)
     parser.add_argument('--train_dataset', type=str, default='data/titles/train.pkl')
     parser.add_argument('--test_dataset', type=str, default='data/titles/test.pkl')

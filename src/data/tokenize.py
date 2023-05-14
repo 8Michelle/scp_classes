@@ -26,7 +26,7 @@ def tokenize_dataset(
             if column == 'class':
                 item[column] = row[column]
             else:
-                item[column] = tokenizer.encode(row[column], add_special_tokens=False)
+                item[column] = tokenizer.encode(row[column], add_special_tokens=False)[:512]
 
         dataset.append(item)
 
