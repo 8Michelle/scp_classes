@@ -1,5 +1,5 @@
 # coding=utf-8
-from transformers import XLMRobertaTokenizer, XLMRobertaModel, AdamW, DataCollatorWithPadding
+from transformers import XLMRobertaTokenizer, XLMRobertaModel, DataCollatorWithPadding
 import pickle
 import torch
 import pytorch_lightning as pl
@@ -156,7 +156,6 @@ class LitDataModule(pl.LightningDataModule):
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
             self.train_dataset, collate_fn=DataCollatorWithPadding(tokenizer=self.tokenizer),
-            num_workers=8,
             batch_size=self.hparams.train_bs,
             shuffle=True
         )
@@ -164,7 +163,6 @@ class LitDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
             self.val_dataset, collate_fn=DataCollatorWithPadding(tokenizer=self.tokenizer),
-            num_workers=8,
             batch_size=self.hparams.test_bs,
             shuffle=False
         )
@@ -179,7 +177,6 @@ def main(args):
     trainer = pl.Trainer(
         logger=wandb_logger,
         gpus=args.gpus,
-        strategy='ddp',
         max_epochs=args.epochs,
         num_sanity_val_steps=0
     )
